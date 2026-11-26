@@ -1,0 +1,258 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'atomzentwo@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidUrlOrEmpty(val, maxLen) {
+      return val is string && val.size() <= maxLen && (val == '' || val.matches('^https?://.*'));
+    }
+
+    function isValidStringList(arr, maxLen) {
+      return arr is list && arr.size() >= 1 && arr.size() <= maxLen && arr[0] is string && arr[0].size() >= 1 && arr[0].size() <= 60;
+    }
+
+    function isValidOptionalStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || (arr[0] is string && arr[0].size() >= 1 && arr[0].size() <= 60));
+    }
+
+    // Validation Blueprints
+    function isValidProject(data) {
+      return data.keys().hasAll([
+          'slug', 'title', 'summary', 'category', 'version', 'techStack',
+          'repoUrl', 'demoUrl', 'cloneCommand', 'imageUrl', 'featured',
+          'visible', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'slug', 'title', 'summary', 'category', 'version', 'techStack',
+          'repoUrl', 'demoUrl', 'cloneCommand', 'imageUrl', 'featured',
+          'visible', 'createdAt', 'updatedAt'
+        ]) &&
+        data.slug is string && data.slug.size() >= 2 && data.slug.size() <= 80 && data.slug.matches('^[a-z0-9\\-]+$') &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 120 &&
+        data.summary is string && data.summary.size() >= 10 && data.summary.size() <= 600 &&
+        data.category in ['Software', 'CLI & Automation', 'Web Apps'] &&
+        data.version is string && data.version.size() >= 1 && data.version.size() <= 32 &&
+        isValidStringList(data.techStack, 12) &&
+        isValidUrlOrEmpty(data.repoUrl, 300) &&
+        isValidUrlOrEmpty(data.demoUrl, 300) &&
+        data.cloneCommand is string && data.cloneCommand.size() <= 300 &&
+        data.imageUrl is string && data.imageUrl.size() <= 400 &&
+        data.featured is bool &&
+        data.visible is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCollab(data) {
+      return data.keys().hasAll([
+          'referenceId', 'name', 'portfolioUrl', 'contact', 'collabType',
+          'techStack', 'pitch', 'status', 'adminNotes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'referenceId', 'name', 'portfolioUrl', 'contact', 'collabType',
+          'techStack', 'pitch', 'status', 'adminNotes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.referenceId is string && data.referenceId.size() >= 10 && data.referenceId.size() <= 20 && data.referenceId.matches('^HNRT-[A-Z0-9]+$') &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        isValidUrlOrEmpty(data.portfolioUrl, 300) &&
+        data.contact is string && data.contact.size() >= 3 && data.contact.size() <= 160 &&
+        data.collabType in ['Open-Source Contribution', 'Joint Venture', 'Client Project', 'Security Research'] &&
+        isValidStringList(data.techStack, 12) &&
+        data.pitch is string && data.pitch.size() >= 10 && data.pitch.size() <= 3000 &&
+        data.status in ['Pending', 'In Review', 'Approved', 'Archived'] &&
+        data.adminNotes is string && data.adminNotes.size() <= 1500 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCollabStatus(data, refId) {
+      return data.keys().hasAll([
+          'referenceId', 'collabType', 'status', 'publicResponse', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'referenceId', 'collabType', 'status', 'publicResponse', 'createdAt', 'updatedAt'
+        ]) &&
+        data.referenceId == refId &&
+        data.referenceId is string && data.referenceId.size() >= 10 && data.referenceId.size() <= 20 && data.referenceId.matches('^HNRT-[A-Z0-9]+$') &&
+        data.collabType in ['Open-Source Contribution', 'Joint Venture', 'Client Project', 'Security Research'] &&
+        data.status in ['Pending', 'In Review', 'Approved', 'Archived'] &&
+        data.publicResponse is string && data.publicResponse.size() <= 500 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidApiPreset(data) {
+      return data.keys().hasAll([
+          'name', 'category', 'method', 'url', 'headersJson', 'bodyJson',
+          'description', 'enabled', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'name', 'category', 'method', 'url', 'headersJson', 'bodyJson',
+          'description', 'enabled', 'createdAt', 'updatedAt'
+        ]) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.category in ['Daraja', 'Paystack', 'Supabase', 'Custom'] &&
+        data.method in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] &&
+        data.url is string && data.url.size() >= 8 && data.url.size() <= 400 && data.url.matches('^https?://.*') &&
+        data.headersJson is string && data.headersJson.size() <= 4000 &&
+        data.bodyJson is string && data.bodyJson.size() <= 8000 &&
+        data.description is string && data.description.size() <= 300 &&
+        data.enabled is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll([
+          'announcementText', 'announcementActive', 'maintenanceMode',
+          'proxyRateLimitPerMin', 'smtpRateLimitPerMin', 'enabledDevTools', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'announcementText', 'announcementActive', 'maintenanceMode',
+          'proxyRateLimitPerMin', 'smtpRateLimitPerMin', 'enabledDevTools', 'updatedAt'
+        ]) &&
+        data.announcementText is string && data.announcementText.size() <= 240 &&
+        data.announcementActive is bool &&
+        data.maintenanceMode is bool &&
+        data.proxyRateLimitPerMin is int && data.proxyRateLimitPerMin >= 1 && data.proxyRateLimitPerMin <= 120 &&
+        data.smtpRateLimitPerMin is int && data.smtpRateLimitPerMin >= 1 && data.smtpRateLimitPerMin <= 30 &&
+        isValidOptionalStringList(data.enabledDevTools, 10) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['email', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['email', 'role', 'createdAt']) &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        data.role in ['admin', 'superadmin'] &&
+        data.createdAt is timestamp;
+    }
+
+    // 1. Projects Catalog
+    match /projects/{projectId} {
+      allow get: if isValidId(projectId) && (existing().visible == true || isAdmin());
+      allow list: if existing().visible == true || isAdmin();
+      allow create: if isAdmin() && isValidId(projectId) && isValidProject(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(projectId) && isValidProject(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'slug', 'title', 'summary', 'category', 'version', 'techStack',
+          'repoUrl', 'demoUrl', 'cloneCommand', 'imageUrl', 'featured', 'visible', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(projectId);
+    }
+
+    // 2. Private Collaboration Requests (PII isolated to Admins)
+    match /collaborations/{collabId} {
+      allow get: if isAdmin() && isValidId(collabId);
+      allow list: if isAdmin();
+      allow create: if isValidId(collabId) && isValidCollab(incoming()) &&
+        incoming().status == 'Pending' &&
+        incoming().adminNotes == '' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        existsAfter(/databases/$(database)/documents/collabStatuses/$(incoming().referenceId));
+      allow update: if isAdmin() && isValidId(collabId) && isValidCollab(incoming()) &&
+        incoming().referenceId == existing().referenceId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminNotes', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(collabId);
+    }
+
+    // 3. Public Non-PII Status Mirror
+    match /collabStatuses/{refId} {
+      allow get: if isValidId(refId);
+      allow list: if isAdmin();
+      allow create: if isValidId(refId) && isValidCollabStatus(incoming(), refId) &&
+        incoming().status == 'Pending' &&
+        incoming().publicResponse == '' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(refId) && isValidCollabStatus(incoming(), refId) &&
+        incoming().referenceId == existing().referenceId &&
+        incoming().collabType == existing().collabType &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'publicResponse', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(refId);
+    }
+
+    // 4. API Presets for DevTools Hub
+    match /apiPresets/{presetId} {
+      allow get: if isValidId(presetId) && (existing().enabled == true || isAdmin());
+      allow list: if existing().enabled == true || isAdmin();
+      allow create: if isAdmin() && isValidId(presetId) && isValidApiPreset(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(presetId) && isValidApiPreset(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'category', 'method', 'url', 'headersJson', 'bodyJson',
+          'description', 'enabled', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(presetId);
+    }
+
+    // 5. Global Site Settings Singleton
+    match /siteSettings/{settingId} {
+      allow get: if settingId == 'global';
+      allow list: if isAdmin();
+      allow create: if isAdmin() && settingId == 'global' && isValidSiteSettings(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() && settingId == 'global' && isValidSiteSettings(incoming()) &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'announcementText', 'announcementActive', 'maintenanceMode',
+          'proxyRateLimitPerMin', 'smtpRateLimitPerMin', 'enabledDevTools', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // 6. Admins Allowlist
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(adminId) && isValidAdminUser(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update: if isAdmin() && isValidId(adminId) && isValidAdminUser(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['role']);
+      allow delete: if isAdmin() && isValidId(adminId);
+    }
+
+    // 7. Connection Health Check Document
+    match /test/connection {
+      allow get: if true;
+    }
+  }
+}

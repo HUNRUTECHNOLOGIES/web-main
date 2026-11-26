@@ -1,0 +1,375 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "Software, CLI script, or web application listed in the HUNRUTECH catalog.",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "pattern": "^[a-z0-9-]+$",
+          "description": "URL-safe identifier slug."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Display title of the tool or software."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 600,
+          "description": "Concise technical description."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Software", "CLI & Automation", "Web Apps"],
+          "description": "Catalog classification."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "description": "Release version string."
+        },
+        "techStack": {
+          "type": "array",
+          "description": "Technology tags (up to 12 items)."
+        },
+        "repoUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Source repository URL."
+        },
+        "demoUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Live deployment or demo URL."
+        },
+        "cloneCommand": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "CLI installation or git clone command."
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "Project preview image path."
+        },
+        "featured": {
+          "type": "boolean",
+          "description": "Whether highlighted as a flagship release."
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "Whether visible on the public showcase."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modification server timestamp."
+        }
+      },
+      "required": [
+        "slug",
+        "title",
+        "summary",
+        "category",
+        "version",
+        "techStack",
+        "repoUrl",
+        "demoUrl",
+        "cloneCommand",
+        "imageUrl",
+        "featured",
+        "visible",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CollaborationRequest": {
+      "title": "CollaborationRequest",
+      "description": "Private developer collaboration pitch submitted via the portal.",
+      "type": "object",
+      "properties": {
+        "referenceId": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20,
+          "pattern": "^HNRT-[A-Z0-9]+$",
+          "description": "Unique applicant tracking reference ID."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100,
+          "description": "Applicant name or handle."
+        },
+        "portfolioUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "GitHub or portfolio URL."
+        },
+        "contact": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "description": "Email address or Discord handle."
+        },
+        "collabType": {
+          "type": "string",
+          "enum": [
+            "Open-Source Contribution",
+            "Joint Venture",
+            "Client Project",
+            "Security Research"
+          ],
+          "description": "Engagement type."
+        },
+        "techStack": {
+          "type": "array",
+          "description": "Primary technology tags."
+        },
+        "pitch": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 3000,
+          "description": "Project proposal or research pitch."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "In Review", "Approved", "Archived"],
+          "description": "Current review workflow state."
+        },
+        "adminNotes": {
+          "type": "string",
+          "maxLength": 1500,
+          "description": "Internal review notes set by admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last status update server timestamp."
+        }
+      },
+      "required": [
+        "referenceId",
+        "name",
+        "portfolioUrl",
+        "contact",
+        "collabType",
+        "techStack",
+        "pitch",
+        "status",
+        "adminNotes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CollabStatus": {
+      "title": "CollabStatus",
+      "description": "Public non-PII status mirror keyed by reference ID for applicant status tracking.",
+      "type": "object",
+      "properties": {
+        "referenceId": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20,
+          "pattern": "^HNRT-[A-Z0-9]+$"
+        },
+        "collabType": {
+          "type": "string",
+          "enum": [
+            "Open-Source Contribution",
+            "Joint Venture",
+            "Client Project",
+            "Security Research"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "In Review", "Approved", "Archived"]
+        },
+        "publicResponse": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "referenceId",
+        "collabType",
+        "status",
+        "publicResponse",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ApiPreset": {
+      "title": "ApiPreset",
+      "description": "Workbench API template managed by administrators.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Daraja", "Paystack", "Supabase", "Custom"]
+        },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "url": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 400
+        },
+        "headersJson": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "bodyJson": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "name",
+        "category",
+        "method",
+        "url",
+        "headersJson",
+        "bodyJson",
+        "description",
+        "enabled",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global platform configuration, announcement banner, DevTools toggles, and rate limits.",
+      "type": "object",
+      "properties": {
+        "announcementText": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "announcementActive": {
+          "type": "boolean"
+        },
+        "maintenanceMode": {
+          "type": "boolean"
+        },
+        "proxyRateLimitPerMin": {
+          "type": "integer"
+        },
+        "smtpRateLimitPerMin": {
+          "type": "integer"
+        },
+        "enabledDevTools": {
+          "type": "array"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "announcementText",
+        "announcementActive",
+        "maintenanceMode",
+        "proxyRateLimitPerMin",
+        "smtpRateLimitPerMin",
+        "enabledDevTools",
+        "updatedAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized platform administrator document.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "superadmin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Publicly visible tools/software catalog managed by admins."
+    },
+    "/collaborations/{collabId}": {
+      "schema": { "$ref": "#/entities/CollaborationRequest" },
+      "description": "Private collaboration pitches with PII restricted to admins."
+    },
+    "/collabStatuses/{refId}": {
+      "schema": { "$ref": "#/entities/CollabStatus" },
+      "description": "Non-PII status lookup keyed by Reference ID."
+    },
+    "/apiPresets/{presetId}": {
+      "schema": { "$ref": "#/entities/ApiPreset" },
+      "description": "Admin-managed API sandbox presets for the DevTools Hub."
+    },
+    "/siteSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Global site settings singleton document."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Admin role allowlist."
+    }
+  }
+}
